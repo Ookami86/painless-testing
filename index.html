@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Painless Testing</title>
+    <meta charset='utf-8'>
+    <script type="text/javascript" src='js/jquery-1.5.1.min.js'></script>
+    <script type="text/javascript" src='js/slides.js'></script>
+    <style type="text/css">
+        /* Your individual styles here, or just use inline styles if that’s
+          what you want. */
+        .highlight-bad{
+            background-color: rgba(255,0,0,0.2);
+            display: inline-block;
+        }
+        .highlight-good{
+            background-color: rgba(0,255,0,0.2);
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body style='display: none'>
+
+<div class="wortmarke" id="footer">
+    Craftsmanship. Software. Testing. Community. iJUG. <span class="wortmarke-last">Namics.</span>
+</div>
+<script type="text/javascript">
+    document.allLangs = ["java", "python"];
+    $(document).ready(function(){
+        $("article:not(article.fill)").each(function(){
+            $(this).append($("#footer").clone());
+        });
+    });
+</script>
+
+<section class='slides layout-regular template-ncamp'>
+
+    <article>
+        <h1>
+            Painless Testing
+        </h1>
+        <p>
+            Writing testable code.
+        </p>
+        <p>
+            Johannes Seitz, Software Engineer.<br/>
+            March 7th, 2012
+        </p>
+    </article>
+
+    <article>
+       <h3>Question policy: Ask right away!</h3>
+       <p>
+           <img style="max-width:780px;" src="testing-images/418215_2815.jpg" alt="Puzzled Guy"/>
+           <span style="font-size: 0.5em">Photograph: http://www.sxc.hu</span>
+       </p>
+   </article>
+
+    <article>
+        <h1>About me....</h1>
+    </article>
+
+    <article>
+        <img style="max-width:100%;" src="testing-images/namics-camp.jpg"/>
+    </article>
+
+    <article>
+       <h1>About you....</h1>
+    </article>
+
+    <article class="bigger">
+        <h3>Quick Poll</h3>
+        <p>Who does...</p>
+        <ul class="build">
+            <li>Manual testing?</li>
+            <li>Automated end-to-end/smoke testing?</li>
+            <li>Automated unit testing?</li>
+            <li>Test- or Behaviour-Driven Development?</li>
+        </ul>
+    </article>
+
+    <article class="bigger">
+        <h3>Quick Poll</h3>
+        <p>What's the point of testing?</p>
+        <ul class="build">
+            <li>Proofing correctness?</li>
+            <li>Detect regression?</li>
+            <li>Enable safe refactoring?</li>
+            <li>Feedback loop?</li>
+            <li>Better design?</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Agenda</h1>
+        <ul>
+            <li>Part 1: Writing Tests</li>
+            <li>Part 2: Writing Code</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Part 1: Writing Tests</h1>
+    </article>
+
+    <article class="fill">
+        <h3>Imagine the test suite of your dreams</h3>
+        <p><img src="testing-images/815954_99438517.jpg" alt=""></p>
+    </article>
+
+    <article class="bigger">
+        <h3>F.I.R.S.T. Principle</h3>
+        <p>
+        Compiled by <a href="http://agileinaflash.blogspot.com/2009/02/first.html">Tim Ottinger and Jeff Langr (sic.)</a>:
+        </p>
+        <dl class="build">
+            <dt><strong class="blue">F</strong>ast</dt><dd>Run hundreds or thousands per second</dd>
+            <dt><strong class="blue">I</strong>solated</dt><dd>Failure reasons become obvious</dd>
+            <dt><strong class="blue">R</strong>eliable</dt><dd>Run repeatably in any order, any time</dd>
+            <dt><strong class="blue">S</strong>elf-validating</dt><dd>No manual evaluation required</dd>
+            <dt><strong class="blue">T</strong>imely</dt><dd>Written before the code</dd>
+        </dl>
+    </article>
+
+    <article  class="fill">
+        <h3>Timely Tests</h3>
+        <p><img style="max-width:100%;max-height:100%;" src="testing-images/hot_chocolate.jpg" alt="Hot Chocolate"/></p>
+        <div class="source">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article>
+        <h1>
+            Who tried writing tests for pre-existing code?
+        </h1>
+    </article>
+
+    <article class="fill">
+        <h3>Testing can be painful</h3>
+        <img style="max-width: 100%;" src="testing-images/1327383_64930133.jpg" alt="Screaming Guy">
+        <div class="source" style="color:#f5f5f5;">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article class="fill">
+        <h3>Tests need to fit</h3>
+        <img style="max-width: 100%;" src="testing-images/hardwired.jpg" alt="Hard wired"/>
+    </article>
+
+    <article>
+        <h1 class="green">
+            Write tests timely.
+        </h1>
+    </article>
+
+    <article>
+        <h1>Part 2: Writing Code</h1>
+    </article>
+
+    <article class="bigger">
+        <h3>Hard-to-test Code</h3>
+        <ol class="build">
+            <li>Constructors do too much</li>
+            <li>Law of Demeter violations</li>
+            <li>Temporal coupling and Non-Determinism</li>
+            <li>Classes do too much</li>
+        </ol>
+    </article>
+
+    <!-- BEGINNING OF FIRST SECTION -->
+
+    <article>
+        <h1>Diagnosis:<br/> Constructors do too much</h1>
+    </article>
+
+    <article>
+        <h3>Example</h3>
+<pre class="python">
+class Account():
+
+    def __init__(self):
+        <div class="highlight-bad">dataSource = DataSource(SQLConfig.instance())
+self.transferService = TransferService(dataSource)</div>
+
+    def transfer_to_this_account(self, other_account, amount):
+        receipt = self.transferService.perform_transfer(
+            from_acc=other_account, to_acc=self, amount=amount)
+        return receipt</pre>
+<pre class="java">public class AccountImpl implements Account {
+    private TransferService transferService;
+
+    public AccountImpl(){
+        <div class="highlight-bad">SQLConfig sqlConfig = SQLConfig.getInstance();
+DataSource dataSource = new DataSource(sqlConfig);
+this.transferService = new TransferServiceImpl(dataSource);</div>
+    }
+
+    public Receipt transferToThis(Account otherAccount,
+                                  BigDecimal amount){
+        Receipt receipt = this.transferService.performTransfer(
+                       /*from*/ otherAccount, /*to*/ this, amount);
+        return receipt;
+    }
+}</pre>
+    </article>
+
+    <article>
+        <h3>Slightly different example</h3>
+
+<pre class="python">
+class Account():
+    def __init__(self):
+        <div class="highlight-bad">self.transfer_service = TransferService.get_instance()</div>
+
+    def transfer_to_this_account(self, other_account, amount):
+        receipt = self.transferService.perform_transfer(
+            from_acc=other_account, to_acc=self, amount=amount)
+        return receipt</pre>
+
+<pre class="java">public class AccountImpl implements Account {
+    private TransferService transferService;
+
+    public AccountImpl(){
+        <div class="highlight-bad">this.transferService = TransferServiceImpl.getInstance();</div>
+    }
+
+    public Receipt transferToThis(Account otherAccount,
+                                            BigDecimal amount){
+        Receipt receipt = this.transferService.performTransfer(
+                       /*from*/ otherAccount, /*to*/ this, amount);
+        return receipt;
+    }
+}</pre>
+
+    </article>
+
+    <article>
+        <h3>Why does it hurt?</h3>
+        <ul class="build">
+            <li>Collaborators are hard to exchange <br/> (e.G. for test doubles)</li>
+            <ul>
+                <li>Classes are tightly coupled</li>
+                <li>Constructing in test code may be difficult</li>
+                <li>Tests may be tied to infrastructure (Database)</li>
+            </ul>
+            <li>Complex Constructors are hard to test</li>
+            <li>Subclasses may inherit unwanted behavior</li>
+            <li>Violates <a href="http://en.wikipedia.org/wiki/Single_responsibility_principle">
+                Single Responsibility Principle</a></li>
+        </ul>
+    </article>
+
+    <article class="fill">
+        <h3>Treatment: How to fix it</h3>
+        <img style="max-height: 100%;" src="testing-images/syringe.jpg" alt="Syringe">
+        <div class="source">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article>
+        <h3>How to fix it</h3>
+
+<pre class="java">
+public class AccountImpl implements Account {
+    private TransferService transferService;
+
+    <div class="highlight-good">public AccountImpl(TransferService transferService){</div>
+        this.transferService = transferService;
+    }
+
+    public Receipt transferFromOtherAccount(Account otherAccount,
+                                            BigDecimal amount){
+        Receipt receipt = this.transferService.performTransfer(
+                       /*from*/ otherAccount, /*to*/ this, amount);
+        return receipt;
+    }
+}</pre>
+
+<pre class="python">
+class Account():
+    <div class="highlight-good">def __init__(self, transfer_service):</div>
+        self.transfer_service = transfer_service
+
+    def transfer_to_this_account(self, other_account, amount):
+        receipt = self.transferService.perform_transfer(
+            from_acc=other_account, to_acc=self, amount=amount)
+        return receipt</pre>
+
+    </article>
+
+    <article>
+        <h3>So where is <code>TransferService</code> created?</h3>
+        <ul class="build">
+            <li>Dependencies created outside of the Class</li>
+            <li>Passed in ('wired') upon creation of <code>Account<span class="java">Impl</span></code></li>
+            <ul>
+                <li> <a href="http://en.wikipedia.org/wiki/Dependency_injection#Manually_injected_dependency">Manual Injection</a></li>
+                <li>Container Injection:
+                    <a href="http://www.springsource.org/" class="java">Spring</a>
+                    <a href="http://springpython.webfactional.com/" class="python">Spring</a>,
+                    <a href="http://code.google.com/p/google-guice/" class="java">Google Guice</a>
+                    <a href="http://code.google.com/p/snake-guice/" class="python">Snake-Guice</a>
+                </li>
+            </ul>
+        </ul>
+        <br/>
+        <p class="build"><a href="http://martinfowler.com/articles/injection.html">
+            Read Martin Fowler's article on the DI Pattern
+        </a></p>
+    </article>
+
+    <article>
+        <h3>Test Code</h3>
+<pre class="python">
+class TestAccount(unittest.TestCase):
+
+    def setUp(self):
+        transfer_service = TransferServiceStub()
+        self.account = Account(transfer_service)
+
+    def test_something(self):
+        # ...
+
+if __name__ == '__main__':
+    unittest.main()
+</pre>
+
+<pre class="java">
+public class AccountImplTests {
+
+    private Account account;
+
+    @Before
+    public void setUp(){
+        TransferServiceStub transferServ = new TransferServiceStub();
+        this.account = new AccountImpl(transferServ);
+    }
+
+    @Test
+    // ...
+}
+</pre>
+    </article>
+    <article class="fill">
+        <h3>Symptoms: Look for these warning signs</h3>
+        <img src="testing-images/warning-sign.jpg" style="max-width: 100%;" alt="Warning Sign">
+        <br/>
+        <span style="color:white">Constructors that do too much:</span>
+        <ul style="color: white;width:50%">
+            <li>Constructing or retrieving collaborators</li>
+            <li>Calling static <span class="python"> (a.k.a. class-)</span> methods</li>
+            <li>Performing complicated conditionals or loops</li>
+        </ul>
+        <div class="source" style="color:#f5f5f5;">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <!-- END OF FIRST SECTION -->
+    <!-- BEGINNING OF SECOND SECTION -->
+
+    <article>
+        <h1>Diagnosis: <br/>Digging into collaborators</h1>
+    </article>
+
+    <article>
+        <h3>Example</h3>
+        <pre class="java">
+public class AccountDetailViewController {
+
+    private int accountNumber;
+
+    public AccountDisplayController(HttpServletRequest request){
+        <div class="highlight-bad">String accountNumber = request.getParameter("accountNumber");
+this.accountNumber = Integer.parseInt(accountNumber);</div>
+    }
+    //...
+}</pre>
+<pre class="python">
+from cgi import FieldStorage
+
+class AccountDetailViewController():
+    // Assumes 'environ' is a WSGI environment object.
+    def __init__(self, environ):
+        <div class="highlight-bad">request_attributes = FieldStorage(fp=environ['wsgi.input'],
+                                      environ=environ)
+account_number = request_attributes["accountNumber"]
+self.account_number = int(account_number)</div>
+
+</pre>
+    </article>
+
+    <article>
+        <h3>Another example</h3>
+        <pre class="java">
+public class AccountDetailViewController {
+    // ...
+
+    public Account getAccount(HttpServletRequest request){
+        <div class="highlight-bad">if (request.getUserPrincipal().getName().equals("admin")){</div>
+            int account = request.getAttribute("userAccount");
+            // Do something
+        }
+    }
+}</pre>
+<pre class="python">
+
+class AccountDetailViewController():
+
+    def get_account(self, request):
+        <div class="highlight-bad">if (request.get_user().get_principal().equals("admin"):</div>
+            # Do something
+
+</pre>
+    </article>
+
+    <article>
+        <h3>Why does it hurt?</h3>
+        <ul class="build">
+            <li>Lots of test doubles required (each level of indirection)</li>
+            <li>Reduced portability: Code tied to context object</li>
+            <li>Requires figuring out which values are required</li>
+        </ul>
+    </article>
+
+    <article class="fill">
+        <h3>Treatment: How to fix it</h3>
+        <img style="max-height: 100%;" src="testing-images/band-aid.jpg" alt="Band-Aid">
+        <div class="source">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article>
+        <h3>How to fix it</h3>
+<pre class="java">
+public class AccountDetailViewController {
+
+    private int accountNumber;
+
+    // Option 1:
+    <div class="highlight-good">public AccountDisplayController(int accountNumber){</div>
+          this.accountNumber = accountNumber;
+    }
+
+    // Option 2:
+    <div class="highlight-good">public void setAccountNumber(int accountNumber){</div>
+        this.accountNumber = accountNumber;
+    }
+
+    //...
+}</pre>
+<pre class="python">
+class AccountDetailViewController():
+
+    # Option 1:
+    def __init__(self, account_number):
+       self.account_number = account_number
+    <div class="highlight-good">def get_account(self, user_is_admin=False):</div>
+       #...
+
+    # Option 2:
+    <div class="highlight-good">#def get_account(self, account_number, user_is_admin=False):</div>
+        # ...
+
+</pre>
+    </article>
+
+    <article>
+        <h3>Where is the parameter set?</h3>
+        <p>Pass it in from the outside:</p>
+<pre class="java">
+AccountDetailViewController controller =
+    new AccountDetailViewController(accountNumber);
+</pre>
+<pre class="python"  style="margin-bottom: 10px;">
+class TestAccountDetailViewController(unittest.TestCase):
+    # Option 1:
+    def test_authorized_get_account(self):
+        controller = AccountDetailViewController(account_number)
+        account = controller.get_account(user_is_admin=True);
+</pre>
+        <p class="java">Framework 'Magic'</p>
+<pre class="java" style="margin-bottom: 10px;">
+&lt;jsp:useBean id="accountController" class="my.AccountController"&gt;
+    &lt;jsp:setProperty name="accountController" property="*" /&gt;
+&lt;/jsp:useBean&gt;
+</pre>
+<pre class="java" style="margin: 0px;">
+// Spring @MVC
+@RequestMapping("/account")
+public String displayAccount(@RequestParam("accountNumber")
+                           int accountNumber){
+    // ...
+</pre>
+        <p class="python">Or</p>
+<pre class="python" style="margin-top: 10px;">
+class TestAccountDetailViewController(unittest.TestCase):
+    # Option 2:
+    def test_unauthorized_get_account(self):
+        controller = AccountDetailViewController()
+        self.assertRaises(AccessDenied, controller.get_account,
+                          account_number=0, user_is_admin=False)
+</pre>
+    </article>
+
+    <article class="fill">
+        <h3>Symptoms: Look for these warning signs</h3>
+        <img src="testing-images/warning-sign.jpg" style="max-width: 100%;" alt="Warning Sign">
+        <br/>
+        <span style="color:white">Digging into Collaborators:</span>
+        <ul style="color: white;width:50%">
+            <li>Chained method calls <br/>( <code style="color:#f5f5f5;">foo.bar.baz()</code>)</li>
+            <li>Passed objects only used to access other objects</li>
+            <li>Building test doubles that return test doubles</li>
+            <li>Arguments are Classes named <code style="color:white;">Context, Environment, Container</code> etc.</li>
+        </ul>
+        <div class="source"  style="color:#f5f5f5;">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <!-- END OF SECOND SECTION -->
+    <!-- BEGINNING OF THIRD SECTION -->
+
+    <article>
+        <h1>Diagnosis: <br/>
+            Temporal coupling and Non-Determinism</h1>
+    </article>
+
+    <article>
+        <h3>Example</h3>
+<pre class="java">
+class DeLorean {
+    <div class="highlight-bad">private GlobalState vehicleState = GlobalState.getInstance();</div>
+
+    public void activateFluxCapacitor(){
+        vehicleState.fluxCapacitorActive = true;
+    }
+
+    public void travelInTime(Date to){
+        if (!vehicleState.fluxCapacitorActive){
+            throw new IllegalStateException(
+                "Activate Flux Capacitor first!");
+        }
+        //...
+    }
+}
+</pre>
+<pre class="python">
+class DeLorean():
+    def __init__(self):
+        <div class="highlight-bad">self._global_state = GlobalState()</div>
+
+    def activate_flux_capacitor(self):
+        self.global_state.flux_capacitor_active = True
+
+    def travel_in_time(self, toDate):
+        if not global_state.flux_capacitor_active:
+            raise Exception("Activate Flux Capacitor first!")
+
+</pre>
+    </article>
+
+    <article>
+<h3>Example (continued..)</h3>
+<pre class="java">
+class GlobalState {
+    public boolean fluxCapacitorActive;
+
+    private static instance;
+
+    public static GlobalState getInstance(){
+        if (instance == null){instance = new GlobalState();}
+        return instance;
+    }
+
+    private GlobalState(){};
+}
+</pre>
+<pre class="python">
+class GlobalState(object):
+    def __new__(type, *args):
+        if not '_instance' in type.__dict__:
+            type._instance = object.__new__(type)
+        return type._the_instance
+
+    def __init__(self):
+        if not 'flux_capacitor_active' in self.__dict__:
+            self.__dict__.flux_capacitor_active = false
+</pre>
+    </article>
+
+    <article>
+        <h3>Why does it hurt?</h3>
+        <ul class="build">
+            <li>Cannot use a test double instead of Singleton</li>
+            <li>Sneaky 'hidden' dependencies</li>
+            <li>State changes hard to predict and/or trace</li>
+            <li>Global state mutated (polluted) by previous tests</li>
+            <li>Might cause non-deterministic behavior</li>
+        </ul>
+    </article>
+
+    <article>
+        <h3>Singleton Pattern Lifecycle</h3>
+        <img style="max-width: 100%" src="testing-images/singleton-sequence.png" alt="Singleton Lifecycle"/>
+    </article>
+
+    <article>
+        <h3>Related Quote:</h3>
+        <div class="build">
+            <h4>How do you provide global variables in languages without global variables?</h4>
+            <div>
+                <q style="margin-right: 50px;margin-top:0px;">Don't. Your programs will thank you for taking the time to think about design instead.</q>
+                <div class='author'>
+                  Kent Beck
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article class="fill">
+        <h3>Treatment: How to fix it</h3>
+        <img style="max-height: 100%;" src="testing-images/pills.jpg" alt="Pills">
+        <div class="source">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article>
+        <h3>Treatment: How to fix it</h3>
+<pre class="java">
+class DeLorean {
+    <div class="highlight-good">private boolean fluxCapacitorActive;</div>
+
+    public void activateFluxCapacitor(){
+        this.fluxCapacitorActive = true;
+    }
+
+    public void travelInTime(Date to){
+        if (!this.fluxCapacitorActive){
+            throw new IllegalStateException(
+                "Activate Flux Capacitor first!");
+        }
+        //...
+    }
+}
+</pre>
+<pre class="python">
+class DeLorean():
+    def __init__(self):
+        <div class="highlight-good">self.flux_capacitor_active = False</div>
+
+    def activate_flux_capacitor(self):
+        self.flux_capacitor_active = True
+
+    def travel_in_time(self, toDate):
+        if not self.flux_capacitor_active:
+            raise Exception("Activate Flux Capacitor first!")
+        else:
+            #...
+</pre>
+    </article>
+
+    <article>
+        <h3>If you can't help it</h3>
+        <p>Have a container (e.G. Spring, Guice...) ensure uniqueness.</p>
+        <p>Remove as much mutable state as possible.</p>
+        <ul>
+            <li>Exchangeable for test doubles</li>
+            <li>Controlled instantiation in tests</li>
+            <li>Explicit dependency</li>
+            <li>No more 'reset' methods</li>
+        </ul>
+    </article>
+
+    <article>
+        <h3>Fixing Non-determinism</h3>
+        <p>Non-Determinism undermines trust.</p>
+        <p>Read Martin Fowler's Article about <a href="http://martinfowler.com/articles/nonDeterminism.html">Eradicating Non-determinism in tests</a></p>
+    </article>
+
+    <article class="fill">
+        <h3>Symptoms: Look for these warning signs</h3>
+        <img src="testing-images/warning-sign.jpg" style="max-width: 100%;" alt="Warning Sign">
+        <br/>
+        <span style="color:white">Global state and the Singleton Pattern:</span>
+        <ul style="color: white;width:50%">
+            <li>Usage of static <span class="python"> (a.k.a. class-)</span> methods and fields</li>
+            <li>Usage of the Singleton Pattern</li>
+        </ul>
+        <div class="source" style="color:#f5f5f5;">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <!-- END OF THIRD SECTION -->
+    <!-- BEGINNING OF FOURTH SECTION -->
+
+    <article>
+        <h1>Diagnosis:<br/>
+            Classes that do too much</h1>
+    </article>
+
+    <article>
+        <h3>Example</h3>
+        <br/><br/>
+        <img src="testing-images/iceberg-1.png" alt="Iceberg Class" class="centered"/>
+        <br/>
+        <p style="font-size:0.6em;text-align:center;">Example: Michael Feathers</p>
+    </article>
+
+    <article>
+        <h3>Why does it hurt?</h3>
+        <ul class="build">
+            <li>Black Box testing made hard</li>
+            <li>Violates <a href="http://en.wikipedia.org/wiki/Single_responsibility_principle">
+                Single Responsibility Principle</a></li>
+            <li>Classes hard to understand</li>
+            <li>Re-using made hard</li>
+        </ul>
+    </article>
+
+    <article class="fill">
+        <h3>Treatment: How to fix it</h3>
+        <img style="max-height: 100%;" src="testing-images/surgery.jpg" alt="Surgery">
+        <div class="source">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article>
+        <h3>Treatment: How to fix it</h3>
+        <br/><br/><br/>
+        <img src="testing-images/iceberg-2.png" alt="Iceberg Class" class="centered" style="width:100%"/>
+        <p style="font-size:0.6em;text-align:center;">Example: Michael Feathers</p>
+    </article>
+
+    <article class="fill">
+        <h3>Symptoms: Look for these warning signs</h3>
+        <img src="testing-images/warning-sign.jpg" style="max-width: 100%;" alt="Warning Sign">
+        <br/>
+        <span style="color:white">Classes that do too much:</span>
+        <ul style="color: white;width:50%">
+            <li>Try to sum up what a class does in a single phrase. If this phrase includes “AND” it’s probably doing
+                too much</li>
+            <li>Excessive scrolling</li>
+            <li>Many fields</li>
+            <li>Many methods</li>
+        </ul>
+        <div class="source" style="color:#f5f5f5;">Photograph: http://www.sxc.hu</div>
+    </article>
+
+    <article>
+        <h3>Retrofitting code for testing</h3>
+        <p style="text-align: center">
+            <img src="testing-images/legcacy-code.jpg" alt="Michael Feathers"/>
+        </p>
+    </article>
+
+    <!-- END OF FOURTH SECTION -->
+
+    <article>
+        <h1>
+            Turns out, testable code is also maintainable code.
+        </h1>
+        <p>Well encapsulated. Loosely coupled.</p>
+    </article>
+
+    <article>
+        <h1>
+            Thank you for your attention!
+        </h1>
+
+        <p><br/>
+        Johannes.Seitz@namics.com<br/>
+        @Ookami86</p>
+    </article>
+
+    <article class="smaller">
+        <h3>References / Further reading</h3>
+        <ul>
+            <li>Article: <a href="http://misko.hevery.com/code-reviewers-guide/">Writing testable code</a>*
+                <br/>by Misko Hevery (Google)</li>
+            <li>Article: <a href="http://www.adequatelygood.com/2010/7/Writing-Testable-JavaScript">Writing testable
+                JavaScript</a><br/> by Ben Cherry (Twitter)</li>
+            <li>Presentation: <a href="http://www.youtube.com/watch?v=XcT4yYu_TTs">How to write Clean, Testable code</a>
+                <br/> by Misko Hevery (Google)</li>
+            <li>Presentation: <a href="http://vimeo.com/15007792">The deep synergy between testability and good design</a><br/> by Michael Feathers (Object Mentor)</li>
+            <li class="java">Book: <a href="http://openlibrary.org/works/OL5853946W/JUnit_recipes">
+                JUnit Recipes</a><br/> by J. B. Rainsberger (Agile Consultant)
+            </li>
+            <li>Book: <a href="http://openlibrary.org/works/OL1961692W/Test-driven_development">Test Driven Development
+                by Example</a><br/> by Kent Beck ('Inventor' of TDD and JUnit)</li>
+        </ul>
+        <p>
+            * This presentation is based largely on this guide. <br/> Big thanks to Misko, for compiling and sharing it!
+        </p>
+    </article>
+
+</section>
+</body>
+</html>
